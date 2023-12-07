@@ -72,6 +72,7 @@ class FFT_OpenBoundary(PyPIC_Scatter_Gather):
 
         if dx is not None and dy is not None:
             assert(Dh is None)
+            # print(dx)
 
         elif Dh!=None:
             assert(dx is None and dy is None)

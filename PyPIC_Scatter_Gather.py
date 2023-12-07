@@ -102,6 +102,8 @@ class PyPIC_Scatter_Gather(object):
             else:
                 raise ValueError('x_aper and y_aper, or x_min, x_max and y_min, y_max must be specified!!!')
 
+            print(x_aper)
+            print(dx)
             xg=np.arange(0, x_aper+5.*dx,dx,float)  
             xgr=xg[1:]
             xgr=xgr[::-1]#reverse array
@@ -110,6 +112,8 @@ class PyPIC_Scatter_Gather(object):
             Nxg=len(xg);
             bias_x=min(xg);
 
+            print(y_aper)
+            print(dy)
             yg=np.arange(0,y_aper+4.*dy,dy,float)  
             ygr=yg[1:]
             ygr=ygr[::-1]#reverse array
