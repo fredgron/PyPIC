@@ -222,6 +222,7 @@ class AddTelescopicGrids(AddMultiGrids):
     def __init__(self, pic_main, f_telescope, target_grid, N_nodes_discard, N_min_Dh_main,
                     sparse_solver='PyKLU'):
         
+        print('Begin Telescopic grid')
         x_min_target = target_grid['x_min_target']
         x_max_target = target_grid['x_max_target']
         y_min_target = target_grid['y_min_target']
@@ -229,6 +230,8 @@ class AddTelescopicGrids(AddMultiGrids):
         Dh_target = target_grid['Dh_target']
         
         Dh_main = pic_main.Dh
+
+        print("x_min: %.3e\nx_max: %.3e\ny_min: %.3e\ny_max: %.3e\nDh_target: %.3e\nDh_main: %.3e"%(x_min_target, x_max_target, y_min_target, y_max_target, Dh_target, Dh_main))
 
         
         x_center_target = (x_min_target + x_max_target)/2.
