@@ -27,7 +27,7 @@ class AddInternalGrid(PyPIC_Scatter_Gather):
             else:
                 self.pic_internal = FFT_Open.FFT_OpenBoundary(x_aper, y_aper, Dh = Dh_internal, chamb = box_internal)
 
-            # if include_solver: #What is the included solver?    
+            # if include_solver:  
             #     self.pic_internal = FFT_Open.FFT_OpenBoundary(x_aper, y_aper, Dh = Dh_internal, chamb = box_internal)
             #     #check if the internal grid lies inside the chamber
             #     x_border = self.pic_internal.xn[self.pic_internal.flag_border_n]
@@ -39,7 +39,7 @@ class AddInternalGrid(PyPIC_Scatter_Gather):
             #     self.pic_internal = FFT_Open.FFT_OpenBoundary(x_aper, y_aper, Dh = Dh_internal, chamb = box_internal)
             
         else:
-            if include_solver: #What is the included solver?
+            if include_solver: 
                 self.pic_internal = PIC_FD.FiniteDifferences_Staircase_SquareGrid(chamb = box_internal, Dh = Dh_internal, 
                                         remove_external_nodes_from_mat=False, sparse_solver=sparse_solver, include_solver = True)
                 #check if the internal grid lies inside the chamber
