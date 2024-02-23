@@ -22,7 +22,10 @@ class AddInternalGrid(PyPIC_Scatter_Gather):
             y_aper = (box_internal.y_max-box_internal.y_min)/2.
 
             # Not entirly sure how an internal solver in relation to FFT works, so for now I've set up a temporary work around
-            self.pic_internal = FFT_Open.FFT_OpenBoundary(x_aper, y_aper, Dh = Dh_internal, chamb = box_internal)
+            if len(np.atleast_1d(Dh_internal)) == 2:
+                self.pic_internal = FFT_Open.FFT_OpenBoundary(x_aper, y_aper, dx=Dh_internal[0], dy=Dh_internal[1], chamb = box_internal)
+            else:
+                self.pic_internal = FFT_Open.FFT_OpenBoundary(x_aper, y_aper, Dh = Dh_internal, chamb = box_internal)
 
             # if include_solver: #What is the included solver?    
             #     self.pic_internal = FFT_Open.FFT_OpenBoundary(x_aper, y_aper, Dh = Dh_internal, chamb = box_internal)
@@ -59,7 +62,10 @@ class AddInternalGrid(PyPIC_Scatter_Gather):
         self.y_max_internal = y_max_internal
         self.Dh_internal = Dh_internal
         self.N_nodes_discard = N_nodes_discard
-        self.D_discard = N_nodes_discard*Dh_internal	
+        if len(np.atleast_1d(Dh_internal)) == 2:
+            self.D_discard = N_nodes_discard*Dh_internal[1]
+        else:
+            self.D_discard = N_nodes_discard*Dh_internal		
         self.internal_grid_type = internal_grid_type
 
     def scatter(self, x_mp, y_mp, nel_mp, charge = -qe, flag_add=False):
@@ -138,7 +144,8 @@ class AddInternalGrid(PyPIC_Scatter_Gather):
         state_external = self.pic_external.get_state_object()
         
         state = AddInternalGrid(state_external, self.x_min_internal, self.x_max_internal, self.y_min_internal, 
-                self.y_max_internal, self.Dh_internal, self.N_nodes_discard, sparse_solver=self.sparse_solver, include_solver = False, internal_grid_type=self.internal_grid_type)
+                self.y_max_internal, self.Dh_internal, self.N_nodes_discard, sparse_solver=self.sparse_solver, 
+                include_solver = False, internal_grid_type=self.internal_grid_type)
                 
         state.pic_internal.rho = self.pic_internal.rho.copy()
         state.pic_internal.phi = self.pic_internal.phi.copy()				
@@ -251,7 +258,8 @@ class AddTelescopicGrids(AddMultiGrids):
         internal_grid_type = internal_grid_type
         Dh_main = pic_main.Dh
 
-        print("x_min: %.3e\nx_max: %.3e\ny_min: %.3e\ny_max: %.3e\nDh_target: %.3e\nDh_main: %.3e"%(x_min_target, x_max_target, y_min_target, y_max_target, Dh_target, Dh_main))
+        # print("x_min: %.3e\nx_max: %.3e\ny_min: %.3e\ny_max: %.3e\nDh_target: %.3e\nDh_main: %.3e"
+        #       %(x_min_target, x_max_target, y_min_target, y_max_target, Dh_target, Dh_main))
 
         
         x_center_target = (x_min_target + x_max_target)/2.
@@ -284,19 +292,18 @@ class AddTelescopicGrids(AddMultiGrids):
         Sy_list = [Sy_target]
         Dh_list = [Dh_target]
 
-
-
         for i_grid in range(1,n_grids):
             Sx_list.append(Sx_list[-1]/f_exact)
             Sy_list.append(Sy_list[-1]/f_exact)
-            Dh_list.append(Dh_list[-1]/f_exact)
-
+            if len(np.atleast_1d(Dh_list[-1])) == 2:
+                Dh_list.append([Dh_list[-1][0]/f_exact ,Dh_list[-1][1]/f_exact])    
+            else:
+                Dh_list.append(Dh_list[-1]/f_exact)
             
         Sx_list = Sx_list[::-1]
         Sy_list = Sy_list[::-1]
         Dh_list = Dh_list[::-1] 
         pic_list = [pic_main]
-
 
         grids = []
         for i_grid in range(n_grids):
@@ -320,6 +327,7 @@ class AddTelescopicGrids(AddMultiGrids):
         self.N_nodes_discard = N_nodes_discard
         self.N_min_Dh_main = N_min_Dh_main
         
-        super(AddTelescopicGrids, self).__init__(pic_main=pic_main, grids=grids, sparse_solver=sparse_solver, internal_grid_type=internal_grid_type)
+        super(AddTelescopicGrids, self).__init__(pic_main=pic_main, grids=grids, sparse_solver=sparse_solver, 
+                                                 internal_grid_type=internal_grid_type)
 
 
