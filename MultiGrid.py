@@ -2,6 +2,7 @@ import numpy as np
 from . import FiniteDifferences_Staircase_SquareGrid as PIC_FD
 from . import FiniteDifferences_ShortleyWeller_SquareGrid as PIC_FDSW
 from . import simple_polygon as spoly
+from . import FFT_OpenBoundary as FFT_Open
 from .PyPIC_Scatter_Gather import PyPIC_Scatter_Gather
 from scipy.constants import e, epsilon_0
 
@@ -9,28 +10,46 @@ qe = e
 eps0 = epsilon_0
 class AddInternalGrid(PyPIC_Scatter_Gather):
     def __init__(self, pic_external, x_min_internal, x_max_internal, y_min_internal, y_max_internal, Dh_internal, N_nodes_discard,
-                sparse_solver = 'PyKLU', include_solver = True):
+                sparse_solver = 'PyKLU', include_solver = True, internal_grid_type = 'FD'):
         
 
         #build boundary for refinement grid
         box_internal = spoly.SimplePolygon({'Vx':np.array([x_max_internal, x_min_internal, x_min_internal, x_max_internal]),
                                 'Vy':np.array([y_max_internal, y_max_internal, y_min_internal, y_min_internal])})
-        if include_solver:
-            self.pic_internal = PIC_FD.FiniteDifferences_Staircase_SquareGrid(chamb = box_internal, Dh = Dh_internal, 
-                                    remove_external_nodes_from_mat=False, sparse_solver=sparse_solver, include_solver = True)
-            #check if the internal grid lies inside the chamber
-            x_border = self.pic_internal.xn[self.pic_internal.flag_border_n]
-            y_border = self.pic_internal.yn[self.pic_internal.flag_border_n]
-            if pic_external.chamb.is_outside(x_border, y_border).any() == True:
-                raise ValueError('The internal grid is outside the chamber!')
+        
+        if internal_grid_type == 'FFT':
+            x_aper = (box_internal.x_max-box_internal.x_min)/2.
+            y_aper = (box_internal.y_max-box_internal.y_min)/2.
 
+            # Not entirly sure how an internal solver in relation to FFT works, so for now I've set up a temporary work around
+            self.pic_internal = FFT_Open.FFT_OpenBoundary(x_aper, y_aper, Dh = Dh_internal, chamb = box_internal)
+
+            # if include_solver: #What is the included solver?    
+            #     self.pic_internal = FFT_Open.FFT_OpenBoundary(x_aper, y_aper, Dh = Dh_internal, chamb = box_internal)
+            #     #check if the internal grid lies inside the chamber
+            #     x_border = self.pic_internal.xn[self.pic_internal.flag_border_n]
+            #     y_border = self.pic_internal.yn[self.pic_internal.flag_border_n]
+            #     if pic_external.chamb.is_outside(x_border, y_border).any() == True:
+            #         raise ValueError('The internal grid is outside the chamber!')
+
+            # else:
+            #     self.pic_internal = FFT_Open.FFT_OpenBoundary(x_aper, y_aper, Dh = Dh_internal, chamb = box_internal)
             
-
         else:
-            self.pic_internal = PIC_FD.FiniteDifferences_Staircase_SquareGrid(chamb = box_internal, Dh = Dh_internal, 
-                                    remove_external_nodes_from_mat=False, sparse_solver=sparse_solver, include_solver = False)
-                                    
-                                    
+            if include_solver: #What is the included solver?
+                self.pic_internal = PIC_FD.FiniteDifferences_Staircase_SquareGrid(chamb = box_internal, Dh = Dh_internal, 
+                                        remove_external_nodes_from_mat=False, sparse_solver=sparse_solver, include_solver = True)
+                #check if the internal grid lies inside the chamber
+                x_border = self.pic_internal.xn[self.pic_internal.flag_border_n]
+                y_border = self.pic_internal.yn[self.pic_internal.flag_border_n]
+                if pic_external.chamb.is_outside(x_border, y_border).any() == True:
+                    raise ValueError('The internal grid is outside the chamber!')
+
+            else:
+                self.pic_internal = PIC_FD.FiniteDifferences_Staircase_SquareGrid(chamb = box_internal, Dh = Dh_internal, 
+                                        remove_external_nodes_from_mat=False, sparse_solver=sparse_solver, include_solver = False)
+
+                                        
         self.sparse_solver = sparse_solver
         self.pic_external = pic_external
         self.chamb = self.pic_external.chamb	
@@ -41,6 +60,7 @@ class AddInternalGrid(PyPIC_Scatter_Gather):
         self.Dh_internal = Dh_internal
         self.N_nodes_discard = N_nodes_discard
         self.D_discard = N_nodes_discard*Dh_internal	
+        self.internal_grid_type = internal_grid_type
 
     def scatter(self, x_mp, y_mp, nel_mp, charge = -qe, flag_add=False):
         self.pic_external.scatter(x_mp, y_mp, nel_mp, charge, flag_add)
@@ -118,7 +138,7 @@ class AddInternalGrid(PyPIC_Scatter_Gather):
         state_external = self.pic_external.get_state_object()
         
         state = AddInternalGrid(state_external, self.x_min_internal, self.x_max_internal, self.y_min_internal, 
-                self.y_max_internal, self.Dh_internal, self.N_nodes_discard, sparse_solver=self.sparse_solver, include_solver = False)
+                self.y_max_internal, self.Dh_internal, self.N_nodes_discard, sparse_solver=self.sparse_solver, include_solver = False, internal_grid_type=self.internal_grid_type)
                 
         state.pic_internal.rho = self.pic_internal.rho.copy()
         state.pic_internal.phi = self.pic_internal.phi.copy()				
@@ -153,7 +173,7 @@ class AddInternalGrid(PyPIC_Scatter_Gather):
     
         
 class AddMultiGrids(PyPIC_Scatter_Gather):
-    def __init__(self, pic_main, grids, sparse_solver='PyKLU', include_solver = True):
+    def __init__(self, pic_main, grids, sparse_solver='PyKLU', include_solver = True, internal_grid_type = 'FD'):
 
 
         n_grids = len(grids)
@@ -170,7 +190,7 @@ class AddMultiGrids(PyPIC_Scatter_Gather):
 
             pic_list.append(AddInternalGrid(pic_list[-1], x_min_internal, x_max_internal, y_min_internal, 
                                 y_max_internal, Dh_internal, N_nodes_discard, sparse_solver=sparse_solver, 
-                                include_solver = include_solver))
+                                include_solver = include_solver, internal_grid_type=internal_grid_type))
 
                             
         pic_list = pic_list[1:]
@@ -220,7 +240,7 @@ class AddMultiGrids(PyPIC_Scatter_Gather):
 
 class AddTelescopicGrids(AddMultiGrids):
     def __init__(self, pic_main, f_telescope, target_grid, N_nodes_discard, N_min_Dh_main,
-                    sparse_solver='PyKLU'):
+                    sparse_solver='PyKLU', internal_grid_type = 'FD'):
         
         print('Begin Telescopic grid')
         x_min_target = target_grid['x_min_target']
@@ -228,7 +248,7 @@ class AddTelescopicGrids(AddMultiGrids):
         y_min_target = target_grid['y_min_target']
         y_max_target = target_grid['y_max_target']
         Dh_target = target_grid['Dh_target']
-        
+        internal_grid_type = internal_grid_type
         Dh_main = pic_main.Dh
 
         print("x_min: %.3e\nx_max: %.3e\ny_min: %.3e\ny_max: %.3e\nDh_target: %.3e\nDh_main: %.3e"%(x_min_target, x_max_target, y_min_target, y_max_target, Dh_target, Dh_main))
@@ -300,6 +320,6 @@ class AddTelescopicGrids(AddMultiGrids):
         self.N_nodes_discard = N_nodes_discard
         self.N_min_Dh_main = N_min_Dh_main
         
-        super(AddTelescopicGrids, self).__init__(pic_main=pic_main, grids=grids, sparse_solver=sparse_solver)
+        super(AddTelescopicGrids, self).__init__(pic_main=pic_main, grids=grids, sparse_solver=sparse_solver, internal_grid_type=internal_grid_type)
 
 

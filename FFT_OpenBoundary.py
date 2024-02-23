@@ -64,7 +64,7 @@ eps0=epsilon_0
 
 class FFT_OpenBoundary(PyPIC_Scatter_Gather):
     #@profile
-    def __init__(self, x_aper, y_aper, Dh=None, dx=None, dy=None, fftlib = 'pyfftw'):
+    def __init__(self, x_aper, y_aper, Dh=None, dx=None, dy=None, fftlib = 'pyfftw',chamb=None):
         
         print('Start PIC init.:')
         print('FFT, Open Boundary')
@@ -174,9 +174,15 @@ class FFT_OpenBoundary(PyPIC_Scatter_Gather):
         self.tmprho = (self.fgreen*(1.+1j))*0.
         self.tmpphi = (self.fgreen*(1.+1j))*0.
 
-        self.Dh = Dh
+        if Dh != None:
+            self.Dh = Dh
+        else:
+            self.Dh = dy
         self.nx = nx
         self.ny = ny
+
+        if chamb != None:
+            self.chamb = chamb
 
 
     #@profile    
@@ -198,6 +204,9 @@ class FFT_OpenBoundary(PyPIC_Scatter_Gather):
         state.phi = self.phi.copy()
         state.efx = self.efx.copy()
         state.efy = self.efy.copy()
+    
+        if hasattr(self, 'chamb'):
+            state.chamb = self.chamb
         
         return state
 
