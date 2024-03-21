@@ -109,8 +109,8 @@ class PyPIC_Scatter_Gather(object):
             xgr=xgr[::-1]#reverse array
             xg=np.concatenate((-xgr,xg),0)
             xg = xg + x_center
-            Nxg=len(xg);
-            bias_x=min(xg);
+            Nxg=len(xg)
+            bias_x=min(xg)
 
             print("y-aperture: %.3e"%y_aper)
             print("dy: %.3e"%dy)
@@ -119,8 +119,8 @@ class PyPIC_Scatter_Gather(object):
             ygr=ygr[::-1]#reverse array
             yg=np.concatenate((-ygr,yg),0)
             yg = yg + y_center
-            Nyg=len(yg);
-            bias_y=min(yg);	
+            Nyg=len(yg)
+            bias_y=min(yg)	
 
         else:
             raise ValueError('dx and dy, or xg and yg must be specified!!!')

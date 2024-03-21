@@ -27,6 +27,8 @@ class AddInternalGrid(PyPIC_Scatter_Gather):
             else:
                 self.pic_internal = FFT_Open.FFT_OpenBoundary(x_aper, y_aper, Dh = Dh_internal, chamb = box_internal)
 
+            
+            
             # if include_solver:  
             #     self.pic_internal = FFT_Open.FFT_OpenBoundary(x_aper, y_aper, Dh = Dh_internal, chamb = box_internal)
             #     #check if the internal grid lies inside the chamber

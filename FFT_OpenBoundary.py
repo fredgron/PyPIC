@@ -64,7 +64,7 @@ eps0=epsilon_0
 
 class FFT_OpenBoundary(PyPIC_Scatter_Gather):
     #@profile
-    def __init__(self, x_aper, y_aper, Dh=None, dx=None, dy=None, fftlib = 'pyfftw',chamb=None):
+    def __init__(self, x_aper, y_aper, Dh=None, dx=None, dy=None, fftlib = 'pyfftw', chamb=None):
         
         print('Start PIC init.:')
         print('FFT, Open Boundary')
@@ -186,11 +186,11 @@ class FFT_OpenBoundary(PyPIC_Scatter_Gather):
 
 
     #@profile    
-    def solve(self, rho = None, flag_verbose = False):
+    def solve(self, rho = None, flag_verbose = False, pic_external = None):
         if rho is None:
             rho = self.rho
 
-        self._solve_core(rho)
+        self._solve_core(rho, pic_external)
 
         self.phi = np.real(self.hlpphi)
         self.efx = np.real(self.hlpefx)
@@ -219,18 +219,27 @@ class FFT_OpenBoundary(PyPIC_Scatter_Gather):
 
         
     #@profile
-    def solve_states(self, states):
+    def solve_states(self, states, pic_s_external = None):
         
         states = np.atleast_1d(states)
 
+        # if pic_s_external is None:
+        #     pic_s_external = len(states)*[None]
+        # else:
+        #     pic_s_external = np.atleast_1d(pic_s_external)
+            
+        # if len(pic_s_external) != len(states):
+        #     raise ValueError('Found len(pic_s_external) != len(states)!!!!')
+
         if len(states) > 2:
             raise ValueError('Not implemented yet! Sorry.')
-
+        
         elif len(states) == 1:
 
             state = states[0]
-            
-            self._solve_core(state.rho)
+            # pic_external = pic_s_external[0]
+
+            self._solve_core(state.rho) #, pic_external)
             
             state.phi = np.real(self.hlpphi)
             state.efx = np.real(self.hlpefx)
@@ -249,9 +258,12 @@ class FFT_OpenBoundary(PyPIC_Scatter_Gather):
             states[0].efy = np.real(self.hlpefy)
 
     #@profile
-    def _solve_core(self, rho):
+    def _solve_core(self, rho, pic_external = None):
 
         self.tmprho[:self.ny, :self.nx] = rho.T
+
+        # if pic_external is not None:
+        #     print("Not 100%% sure what this step should do...")
 
         self.fft2()
 
