@@ -41,7 +41,7 @@ Cf2py intent(out) Ey_n
      	fj = 1+(yn(p)-bias_y)/dy;             !j index of particle' cell(C-like!!!!)
      	j = int(fj);
      	hy = fj-dble(j);                      !fractional y position in cell
-
+        !print "(e10.3)",hy
      	
      	!gather electric field
         if (i>0 .and. j>0 .and. i<Nxg .and. j<Nyg) then

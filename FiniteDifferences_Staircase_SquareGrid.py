@@ -69,13 +69,26 @@ class FiniteDifferences_Staircase_SquareGrid(PyPIC_Scatter_Gather):
         print('Start PIC init.:')
         print('Finite Differences, Square Grid')
 
-
-        self.Dh = Dh
+        if len(np.atleast_1d(Dh)) == 2:
+            self.Dh = Dh
+            self.Dh_x = Dh[0]
+            self.Dh_y = Dh[1]
+            Dh_x = Dh[0]
+            Dh_y = Dh[1]
+            # sparse_solver = 'scipy_slu'
+            # print("Finite Differences, attempt at non-square grids")
+        else:
+            self.Dh = Dh
+            self.Dh_x = Dh
+            self.Dh_y = Dh
+            Dh_x = Dh
+            Dh_y = Dh
+        
         if hasattr(chamb, 'x_min') and hasattr(chamb, 'x_max') and hasattr(chamb, 'y_min') and hasattr(chamb, 'y_max'):
-            super(FiniteDifferences_Staircase_SquareGrid, self).__init__(dx = self.Dh, dy = self.Dh, 
+            super(FiniteDifferences_Staircase_SquareGrid, self).__init__(dx = self.Dh_x, dy = self.Dh_y, 
                 x_min = chamb.x_min, x_max = chamb.x_max, y_min = chamb.y_min, y_max = chamb.y_max)
         else:
-            super(FiniteDifferences_Staircase_SquareGrid, self).__init__(chamb.x_aper, chamb.y_aper, self.Dh, self.Dh)
+            super(FiniteDifferences_Staircase_SquareGrid, self).__init__(chamb.x_aper, chamb.y_aper, self.Dh_x, self.Dh_y)
 
         Nyg, Nxg = self.Nyg, self.Nxg
         
@@ -111,15 +124,15 @@ class FiniteDifferences_Staircase_SquareGrid(PyPIC_Scatter_Gather):
                 if np.mod(u, Nxg*Nyg//20)==0:
                     print(('Mat. assembly %.0f'%(float(u)/ float(Nxg*Nyg)*100)+"""%"""))
                 if flag_inside_n[u]:
-                    A[u,u] = -(4./(Dh*Dh))
-                    A[u,u-1]=1./(Dh*Dh);     #phi(i-1,j)nx
-                    A[u,u+1]=1./(Dh*Dh);     #phi(i+1,j)
-                    A[u,u-Nyg]=1./(Dh*Dh);    #phi(i,j-1)
-                    A[u,u+Nyg]=1./(Dh*Dh);    #phi(i,j+1)
+                    A[u,u] = -(2/(Dh_x*Dh_x) +2/(Dh_y*Dh_y))#-(4./(Dh_x*Dh_y))
+                    A[u,u-1]=1./(Dh_x*Dh_x);     #phi(i-1,j)nx
+                    A[u,u+1]=1./(Dh_x*Dh_x);     #phi(i+1,j)
+                    A[u,u-Nyg]=1./(Dh_y*Dh_y);    #phi(i,j-1)
+                    A[u,u+Nyg]=1./(Dh_y*Dh_y);    #phi(i,j+1)
                 else:
                     # external nodes
                     A[u,u]=1.
-                    
+            print(np.shape(A))        
             A=A.tocsr() #convert to csr format
             
             #Remove trivial equtions 
@@ -139,6 +152,7 @@ class FiniteDifferences_Staircase_SquareGrid(PyPIC_Scatter_Gather):
                     Msel[ii, ii] =1.
             Msel = Msel.tocsc()
             Asel = Msel.T*A*Msel
+            print(np.shape(Asel))
             Asel=Asel.tocsc() 
             
 
@@ -166,6 +180,7 @@ class FiniteDifferences_Staircase_SquareGrid(PyPIC_Scatter_Gather):
             self.flag_inside_n_mat = np.logical_not(flag_outside_n_mat)
             self.flag_border_mat = flag_border_mat
             self.Asel = Asel
+            self.A = A
             self.luobj = luobj
             self.U_sc_eV_stp=0.;
             self.sparse_solver = sparse_solver
@@ -225,7 +240,7 @@ class FiniteDifferences_Staircase_SquareGrid(PyPIC_Scatter_Gather):
                 
     def _solve_core(self, state, rho, pic_external):
 
-        b=-rho.flatten()/eps0;
+        b=-rho.flatten()/eps0
         b[~(self.flag_inside_n)]=0.; #boundary condition
 
         if pic_external is not None:
@@ -235,8 +250,13 @@ class FiniteDifferences_Staircase_SquareGrid(PyPIC_Scatter_Gather):
             b[self.flag_border_n] = phi_border
 
         b_sel = self.Msel_T*b
+
         phi_sel = self.luobj.solve(b_sel)
-        phi = self.Msel*phi_sel
+        # phi_sel = ssl.spsolve(self.Asel, b_sel)
+
+        #phi = self.Msel*phi_sel 
+        phi = ssl.spsolve(self.A, b)
+        
         phi=np.reshape(phi,(self.Nxg,self.Nyg))
 
         efx = state.efx
@@ -248,8 +268,8 @@ class FiniteDifferences_Staircase_SquareGrid(PyPIC_Scatter_Gather):
         efx[self.flag_border_mat]=efx[self.flag_border_mat]*2;
         efy[self.flag_border_mat]=efy[self.flag_border_mat]*2;
         
-        state.efx = efx / (2*self.Dh);    #divide grid size
-        state.efy = efy / (2*self.Dh); 
+        state.efx = efx / (2*self.Dh_x);    #divide grid size
+        state.efy = efy / (2*self.Dh_y); 
         state.rho = rho
         state.phi = phi
         state.b = b
