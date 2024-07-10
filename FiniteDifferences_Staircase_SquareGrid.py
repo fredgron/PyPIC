@@ -208,7 +208,7 @@ class FiniteDifferences_Staircase_SquareGrid(PyPIC_Scatter_Gather):
         if rho is None:
             rho = self.rho
             
-        self._solve_core(self, rho, pic_external) #change 2
+        self._solve_core(self, rho, pic_external)
 
         
     def get_state_object(self):
@@ -250,13 +250,8 @@ class FiniteDifferences_Staircase_SquareGrid(PyPIC_Scatter_Gather):
             b[self.flag_border_n] = phi_border
 
         b_sel = self.Msel_T*b
-
         phi_sel = self.luobj.solve(b_sel)
-        # phi_sel = ssl.spsolve(self.Asel, b_sel)
-
-        #phi = self.Msel*phi_sel 
-        phi = ssl.spsolve(self.A, b)
-        
+        phi = self.Msel*phi_sel
         phi=np.reshape(phi,(self.Nxg,self.Nyg))
 
         efx = state.efx
