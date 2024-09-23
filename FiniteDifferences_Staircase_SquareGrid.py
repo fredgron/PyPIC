@@ -75,8 +75,6 @@ class FiniteDifferences_Staircase_SquareGrid(PyPIC_Scatter_Gather):
             self.Dh_y = Dh[1]
             Dh_x = Dh[0]
             Dh_y = Dh[1]
-            # sparse_solver = 'scipy_slu'
-            # print("Finite Differences, attempt at non-square grids")
         else:
             self.Dh = Dh
             self.Dh_x = Dh
@@ -124,7 +122,7 @@ class FiniteDifferences_Staircase_SquareGrid(PyPIC_Scatter_Gather):
                 if np.mod(u, Nxg*Nyg//20)==0:
                     print(('Mat. assembly %.0f'%(float(u)/ float(Nxg*Nyg)*100)+"""%"""))
                 if flag_inside_n[u]:
-                    A[u,u] = -(2/(Dh_x*Dh_x) +2/(Dh_y*Dh_y))#-(4./(Dh_x*Dh_x))
+                    A[u,u] = -(2/(Dh_x*Dh_x) +2/(Dh_y*Dh_y)) #-(4./(Dh_x*Dh_x))
                     A[u,u-1]=1./(Dh_y*Dh_y);     #phi(i-1,j)nx
                     A[u,u+1]=1./(Dh_y*Dh_y);     #phi(i+1,j)
                     A[u,u-Nyg]=1./(Dh_x*Dh_x);    #phi(i,j-1)
